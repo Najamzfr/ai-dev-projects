@@ -99,7 +99,6 @@ export function GameBoard() {
               boxShadow: index === 0 
                 ? '0 0 10px hsl(var(--snake)), 0 0 20px hsl(var(--snake))'
                 : '0 0 5px hsl(var(--snake))',
-              transition: isWrapping && index === 0 ? 'none' : 'left 75ms, top 75ms',
             }}
           >
             {/* Snake eyes on head */}
