@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { GameProvider, useGame } from '@/context/GameContext';
+import { LoginScreen } from '@/components/LoginScreen';
+import { MainMenu } from '@/components/MainMenu';
+import { GameBoard } from '@/components/GameBoard';
+import { GameOverScreen } from '@/components/GameOverScreen';
+import { Leaderboard } from '@/components/Leaderboard';
 
+// Main game router component
+function GameRouter() {
+  const { currentScreen } = useGame();
+
+  switch (currentScreen) {
+    case 'login':
+      return <LoginScreen />;
+    case 'menu':
+      return <MainMenu />;
+    case 'game':
+      return <GameBoard />;
+    case 'gameover':
+      return <GameOverScreen />;
+    case 'leaderboard':
+      return <Leaderboard />;
+    default:
+      return <LoginScreen />;
+  }
+}
+
+// Main index page with provider
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <GameProvider>
+      <main className="min-h-screen bg-background">
+        <GameRouter />
+      </main>
+    </GameProvider>
   );
 };
 
