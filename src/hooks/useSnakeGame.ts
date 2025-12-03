@@ -50,6 +50,9 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
   const snakeRef = useRef(snake);
   const foodRef = useRef(food);
   
+  // Track if direction was already changed this tick (prevents rapid key presses causing collision)
+  const directionChangedThisTick = useRef(false);
+  
   // Update refs when state changes
   useEffect(() => {
     directionRef.current = direction;
@@ -95,6 +98,9 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
 
   // Move snake
   const moveSnake = useCallback(() => {
+    // Reset direction change flag at start of each tick
+    directionChangedThisTick.current = false;
+    
     const currentSnake = snakeRef.current;
     const currentDirection = directionRef.current;
     const currentFood = foodRef.current;
@@ -173,29 +179,38 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
         return;
       }
 
+      // Only allow one direction change per tick to prevent rapid key presses
+      if (directionChangedThisTick.current) return;
+      
       const currentDir = directionRef.current;
+      let newDirection: Direction | null = null;
       
       switch (e.key) {
         case 'ArrowUp':
         case 'w':
         case 'W':
-          if (currentDir !== 'DOWN') setDirection('UP');
+          if (currentDir !== 'DOWN') newDirection = 'UP';
           break;
         case 'ArrowDown':
         case 's':
         case 'S':
-          if (currentDir !== 'UP') setDirection('DOWN');
+          if (currentDir !== 'UP') newDirection = 'DOWN';
           break;
         case 'ArrowLeft':
         case 'a':
         case 'A':
-          if (currentDir !== 'RIGHT') setDirection('LEFT');
+          if (currentDir !== 'RIGHT') newDirection = 'LEFT';
           break;
         case 'ArrowRight':
         case 'd':
         case 'D':
-          if (currentDir !== 'LEFT') setDirection('RIGHT');
+          if (currentDir !== 'LEFT') newDirection = 'RIGHT';
           break;
+      }
+      
+      if (newDirection && newDirection !== currentDir) {
+        setDirection(newDirection);
+        directionChangedThisTick.current = true;
       }
     };
 
