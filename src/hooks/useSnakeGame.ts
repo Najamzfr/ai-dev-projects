@@ -30,6 +30,9 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
     { x: 8, y: 10 },
   ]);
   
+  // Track if snake just wrapped (for disabling animation)
+  const [isWrapping, setIsWrapping] = useState(false);
+  
   // Food position
   const [food, setFood] = useState<Position>({ x: 15, y: 10 });
   
@@ -111,9 +114,14 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
         onGameOver(score);
         return;
       }
+      setIsWrapping(false);
     } else {
       // Walls-through mode: wrap around
-      newHead = wrapPosition(newHead);
+      const wrapped = wrapPosition(newHead);
+      // Check if wrapping occurred
+      const didWrap = wrapped.x !== newHead.x || wrapped.y !== newHead.y;
+      setIsWrapping(didWrap);
+      newHead = wrapped;
     }
 
     // Check self collision
@@ -221,6 +229,7 @@ export function useSnakeGame(mode: GameMode, onGameOver: (score: number) => void
     score,
     isPlaying,
     isPaused,
+    isWrapping,
     gridSize: GRID_SIZE,
     startGame,
     togglePause,

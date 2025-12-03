@@ -21,6 +21,7 @@ export function GameBoard() {
     score,
     isPlaying,
     isPaused,
+    isWrapping,
     gridSize,
     startGame,
     togglePause,
@@ -87,7 +88,7 @@ export function GameBoard() {
         {snake.map((segment, index) => (
           <div
             key={index}
-            className="absolute rounded-sm transition-all duration-75"
+            className="absolute rounded-sm"
             style={{
               left: segment.x * cellSize,
               top: segment.y * cellSize,
@@ -98,6 +99,7 @@ export function GameBoard() {
               boxShadow: index === 0 
                 ? '0 0 10px hsl(var(--snake)), 0 0 20px hsl(var(--snake))'
                 : '0 0 5px hsl(var(--snake))',
+              transition: isWrapping && index === 0 ? 'none' : 'left 75ms, top 75ms',
             }}
           >
             {/* Snake eyes on head */}
