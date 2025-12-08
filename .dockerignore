@@ -1,0 +1,68 @@
+# Git
+.git
+.github
+.gitignore
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+dist
+build
+*.egg-info
+.pytest_cache
+coverage
+htmlcov
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Testing
+tests
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.py
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
