@@ -1,3 +1,2 @@
-toyaikit
 openai
 python-dotenv

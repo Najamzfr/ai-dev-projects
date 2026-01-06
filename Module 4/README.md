@@ -1,163 +1,146 @@
-AI Coding Agent (AI Dev Tools Zoomcamp – Module 4)
-Overview
+# AI Coding Agent
 
-This project implements a Python-based AI Coding Agent that converts natural language instructions into real code changes on disk.
+*AI Dev Tools Zoomcamp – Module 4*
 
-Unlike a chatbot, this agent:
+## Overview
 
-Writes actual files
+This project implements a Python-based AI Coding Agent that converts natural language instructions into actual code changes on disk. Unlike traditional chatbots, this agent can read, create, and modify files within a controlled sandbox environment, demonstrating practical agentic AI design.
 
-Reads and understands existing project structure
+## What This Agent Can Do
 
-Iteratively improves code based on user feedback
+✅ **Generate new code files** from natural language descriptions
+✅ **Read and modify existing files** with context awareness
+✅ **Understand current project structure** and maintain consistency
+✅ **Iteratively improve code** based on user feedback
+✅ **Safely operate** within a restricted filesystem sandbox (`output/` directory)
 
-Operates safely inside a controlled filesystem sandbox
+The agent mimics the behavior of AI-powered IDE assistants like Cursor, but in a simplified, educational implementation.
 
-The project demonstrates agentic AI design, not just text generation.
+## Project Structure
 
-What This Agent Can Do
-
-✅ Generate new code files from scratch
-✅ Read existing files and modify them
-✅ Understand the current project structure
-✅ Iteratively improve code until the user stops
-✅ Safely operate inside a restricted directory (output/)
-
-This mimics the internal behavior of tools like Cursor or AI-powered IDE assistants, but in a simplified, educational form.
-
-Project Structure
-coding-agent/
+```
+Module 4/
 │
-├── agent.py          # Main agent loop and control logic
-├── tools.py          # File system tools (read, write, list)
-├── prompts.py        # System prompt (agent behavior rules)
-├── requirements.txt  # Dependencies
-├── .env              # API key (not committed)
-└── output/           # Generated / modified code lives here
+├── agent.py              # Main agent loop and orchestration logic
+├── tools.py              # Sandboxed filesystem operations
+├── prompts.py            # System prompt defining agent behavior rules
+├── requirements.txt      # Python dependencies
+├── .env                  # API key configuration (not committed)
+├── output/               # Sandbox directory for generated/modified code
+│   ├── app/
+│   └── ...               # Generated projects appear here
+└── README.md             # This file
+```
 
-How the Agent Works (High-Level)
+## How It Works
 
-The agent follows this loop:
+The agent follows a structured workflow:
 
+```
 User Instruction
       ↓
-LLM (plans changes)
+Read Project State (files + contents)
       ↓
-Structured JSON output
+Send Context to LLM (GPT-4o-mini)
       ↓
-Python tools execute changes
+LLM Plans Changes → Structured JSON Response
       ↓
-User provides next instruction
+Python Tools Execute File Operations
+      ↓
+User Provides Next Instruction
+```
 
+**Key Principle:** The LLM acts as the planner, while Python handles the execution.
 
-Key idea:
+## Core Components
 
-The LLM decides what to do, Python executes it.
+### 1. `agent.py` — The Controller
+- Runs an interactive command loop
+- Reads current project state from `output/` directory
+- Sends contextual information to OpenAI's API
+- Parses structured JSON responses from the LLM
+- Applies file changes using the tools module
 
-Core Components Explained
-1. agent.py — The Controller
+### 2. `tools.py` — Safe File Operations
+Provides sandboxed filesystem functions:
+- `create_file(path, content)` — Creates/overwrites files
+- `read_file(path)` — Reads file contents
+- `list_files()` — Lists all files in the sandbox
+- All operations are restricted to the `output/` directory
 
-Runs an interactive loop
+### 3. `prompts.py` — Agent Behavior Rules
+Defines strict constraints for the LLM:
+- Output only valid JSON (no explanations or markdown)
+- All files must reside in `output/` directory
+- Preserve existing logic unless explicitly instructed to change
+- Support iterative improvements
+- Handle multiple file operations in a single response
 
-Accepts user instructions
+## Installation & Setup
 
-Reads current project state (files + contents)
-
-Sends context to the LLM
-
-Applies returned changes using tools
-
-This file orchestrates the entire agent lifecycle.
-
-2. tools.py — The Agent’s Hands
-
-Contains safe, sandboxed filesystem operations:
-
-create_file(path, content)
-
-read_file(path)
-
-update_file(path, content)
-
-list_files()
-
-All file access is restricted to the output/ directory to prevent unsafe behavior.
-
-3. prompts.py — The Agent Contract
-
-Defines strict rules for the LLM:
-
-Output JSON only
-
-No explanations or markdown
-
-Modify existing files carefully
-
-Preserve working logic unless told otherwise
-
-Never write outside output/
-
-This transforms the LLM from a chatbot into a reliable planning engine.
-
-Iterative Agent Behavior
-
-The agent supports human-in-the-loop iteration:
-
-Example session:
-
-Create a Python script that prints Hello
-→ Agent creates file
-
-Improve the code style
-→ Agent edits existing file
-
-Add error handling
-→ Agent updates file again
-
-exit
-
-
-This mirrors real developer workflows.
-
-Safety & Design Principles
-
-🔒 Filesystem sandboxing (output/ only)
-
-🧩 Structured JSON outputs for reliability
-
-🔁 Iterative improvement loop
-
-🧠 LLM as planner, Python as executor
-
-📦 Minimal dependencies, clear architecture
-
-Installation & Setup
-1. Install dependencies
+### 1. Install Dependencies
+```bash
 pip install -r requirements.txt
+```
 
-2. Set API key
+### 2. Configure API Key
+Create a `.env` file in the project root:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
-Create a .env file:
+Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys).
 
-OPENAI_API_KEY=your_api_key_here
+## Running the Agent
 
-Running the Agent
+Start the interactive agent:
+```bash
 python agent.py
+```
 
-
-Then interactively provide instructions:
-
+You'll see:
+```
 What do you want to do? (type 'exit' to stop):
+```
 
+### Example Session
 
-Generated or modified files will appear inside output/.
+```
+What do you want to do? (type 'exit' to stop): Create a Python script that adds three numbers
 
-Technologies Used
+✅ Updated 1 file(s)
 
-Python
+What do you want to do? (type 'exit' to stop): Add input validation to handle non-numeric inputs
 
-OpenAI API (via ToyAIKit)
+✅ Updated 1 file(s)
 
-ToyAIKit (LLM abstraction layer)
+What do you want to do? (type 'exit' to stop): exit
+```
 
-Pathlib (safe filesystem handling)
+Generated files appear in the `output/` directory.
+
+## Safety & Design Principles
+
+🔒 **Filesystem Sandboxing** — All operations restricted to `output/` directory
+🧩 **Structured JSON Protocol** — Reliable LLM responses via enforced format
+🔁 **Iterative Development** — Human-in-the-loop improvement cycle
+🧠 **LLM as Planner** — Language model decides, Python executes
+📦 **Minimal Dependencies** — Clean, focused architecture
+
+## Technologies Used
+
+- **Python** — Core implementation
+- **OpenAI API** — GPT-4o-mini for code planning
+- **python-dotenv** — Environment variable management
+- **pathlib** — Safe filesystem path handling
+
+## Learning Outcomes
+
+This module demonstrates:
+- Agentic AI design patterns
+- LLM integration with structured outputs
+- Safe filesystem operations
+- Interactive development workflows
+- JSON-based communication protocols
+
+The agent showcases how AI can be transformed from a conversational tool into a practical coding assistant through careful system design and constraint enforcement.
