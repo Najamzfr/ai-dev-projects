@@ -1,0 +1,99 @@
+# Multi-stage Dockerfile combining Frontend and Backend
+# Optimized for single-container deployment
+
+# Stage 1: Build React frontend
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# Copy package files
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build with API URL pointing to /api (same origin)
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+# Stage 2: Build backend with frontend static files
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv (fast Python package manager)
+RUN pip install --no-cache-dir uv
+
+# Copy backend dependency files
+COPY backend/pyproject.toml backend/uv.lock ./
+
+# Install Python dependencies
+RUN uv sync --frozen
+
+# Copy backend application code
+COPY backend/ ./
+
+# Copy frontend build from stage 1
+COPY --from=frontend-builder /frontend/dist ./static
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Snake Game - Combined Container Starting..."\n\
+echo "Environment: ${ENVIRONMENT:-production}"\n\
+\n\
+# Wait for database if DATABASE_URL is set\n\
+if [ -n "$DATABASE_URL" ]; then\n\
+  echo "Waiting for database to be ready..."\n\
+  # Extract host from DATABASE_URL\n\
+  DB_HOST=$(echo $DATABASE_URL | sed -E "s/.*@([^:]+).*/\\1/")\n\
+  DB_USER=$(echo $DATABASE_URL | sed -E "s/.*:\\/\\/([^:]+):.*/\\1/")\n\
+  \n\
+  MAX_RETRIES=30\n\
+  RETRY_COUNT=0\n\
+  \n\
+  while ! pg_isready -h "$DB_HOST" -U "$DB_USER" > /dev/null 2>&1; do\n\
+    RETRY_COUNT=$((RETRY_COUNT + 1))\n\
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then\n\
+      echo "ERROR: Database not ready after $MAX_RETRIES attempts"\n\
+      exit 1\n\
+    fi\n\
+    echo "Waiting for database... (attempt $RETRY_COUNT/$MAX_RETRIES)"\n\
+    sleep 2\n\
+  done\n\
+  \n\
+  echo "Database is ready!"\n\
+  \n\
+  echo "Running database migrations..."\n\
+  uv run alembic upgrade head\n\
+  echo "Migrations completed successfully!"\n\
+else\n\
+  echo "No DATABASE_URL found, skipping database setup"\n\
+fi\n\
+\n\
+echo "Starting FastAPI server on port ${PORT:-8080}..."\n\
+echo "Serving frontend from: ./static"\n\
+echo "API available at: /api/v1"\n\
+exec uv run uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --log-level info\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Expose port (Render uses PORT env var)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+# Run the application
+CMD ["/app/start.sh"]
+

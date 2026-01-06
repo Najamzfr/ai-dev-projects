@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: snake-game-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: snake_game
+      POSTGRES_USER: snake_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U snake_user -d snake_game"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - snake-network
+
+  # Backend API with volume mounts for development
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: snake-game-backend-dev
+    restart: unless-stopped
+    environment:
+      PORT: 8000
+      HOST: 0.0.0.0
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+asyncpg://snake_user:dev_password@postgres:5432/snake_game
+      DATABASE_POOL_SIZE_MIN: 2
+      DATABASE_POOL_SIZE_MAX: 10
+      CORS_ORIGINS: '["http://localhost","http://localhost:80","http://localhost:8080","http://localhost:5173","http://127.0.0.1","http://127.0.0.1:8080"]'
+      ALLOW_CREDENTIALS: "true"
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: text
+      RATE_LIMIT_PER_MINUTE: 600
+      MAX_SCORE: 999999
+      MIN_SCORE: 0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv  # Don't override virtual environment
+    networks:
+      - snake-network
+    command: >
+      /bin/bash -c "
+      while ! pg_isready -h postgres -U snake_user -d snake_game > /dev/null 2>&1; do sleep 1; done;
+      uv run alembic upgrade head;
+      uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Frontend with hot reload for development
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: snake-game-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Don't override node_modules
+    networks:
+      - snake-network
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data_dev:
+    driver: local
+
+networks:
+  snake-network:
+    driver: bridge
+

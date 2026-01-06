@@ -1,0 +1,3 @@
+toyaikit
+openai
+python-dotenv

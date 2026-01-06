@@ -1,0 +1,27 @@
+# Virtual environments
+.myenv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Generated output by the agent
+output/
+
+# Logs
+*.log
